@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 /**
  * Configuración de Vite para VelDev PR Realtor.
  *
@@ -14,5 +16,5 @@ import tailwindcss from "@tailwindcss/vite";
  *      utilities NO se generan y todo el sitio renderiza sin estilos.
  */
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), cloudflare()],
 });
