@@ -42,7 +42,7 @@ export function Navbar() {
         >
           <span className="text-navy">{SITE_CONFIG.brandName}</span>
           <span className="hidden text-xs uppercase tracking-[0.18em] text-gold sm:inline">
-            {SITE_CONFIG.brandSuffix}
+            {SITE_CONFIG.brandTagline}
           </span>
           <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-gold" />
         </Link>

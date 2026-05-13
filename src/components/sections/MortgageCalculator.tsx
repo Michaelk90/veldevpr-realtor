@@ -6,53 +6,68 @@ import { formatPrice } from "../../lib/format";
 import { openWhatsApp } from "../../lib/whatsapp";
 
 /**
- * Sección: Calculadora de hipoteca interactiva.
+ * Sección: Calculadora de hipoteca interactiva — PR-specific.
+ *
+ * Diferencia vs calculadora típica gringa: incluye estimados de
+ * **seguro** y **CRIM** (impuesto municipal a la propiedad PR)
+ * que son contextos relevantes en la isla.
  *
  * Inputs:
- * - Precio de la propiedad (slider $100K - $1.5M)
+ * - Precio de la propiedad (slider $50K - $1.5M)
  * - Down payment % (slider 5-30%)
  * - Tasa de interés % (slider 5-9%)
- * - Plazo en años (15, 20, 30)
+ * - Plazo en años (15, 20, 25, 30)
  *
  * Outputs (calculados en tiempo real):
- * - Pago mensual (principal + interés)
- * - Total de intereses sobre la vida del préstamo
- * - Total a pagar
- * - Loan amount (price - down payment)
+ * - Principal + interés (la fórmula clásica de amortización)
+ * - Seguro estimado (0.5% anual del precio ÷ 12)
+ * - CRIM estimado (impuesto municipal aproximado — 0.2% anual ÷ 12)
+ * - Total mensual estimado (P+I + Seguro + CRIM)
  *
- * Formula: M = P [ i(1+i)^n ] / [ (1+i)^n - 1 ]
+ * Formula amortización: M = P [ i(1+i)^n ] / [ (1+i)^n - 1 ]
  *   donde P=principal, i=tasa mensual, n=meses
  *
  * Why: 80% de compradores en PR financian — esta herramienta es
- *      mucho más útil que un blog post. Lead gen secundario al final.
+ *      mucho más útil que un blog post. Incluir CRIM hace que se vea
+ *      "local" y no genérica.
  */
 export function MortgageCalculator() {
-  const [price, setPrice] = useState(385000);
+  const [price, setPrice] = useState(285000);
   const [downPct, setDownPct] = useState(20);
-  const [rate, setRate] = useState(7.0);
-  const [termYears, setTermYears] = useState<15 | 20 | 30>(30);
+  const [rate, setRate] = useState(6.5);
+  const [termYears, setTermYears] = useState<15 | 20 | 25 | 30>(30);
 
-  /** Cálculo del préstamo mensual y totales. */
+  /** Cálculo del préstamo y los costos adicionales PR. */
   const calc = useMemo(() => {
     const downAmount = Math.round(price * (downPct / 100));
     const loan = price - downAmount;
     const months = termYears * 12;
     const monthlyRate = rate / 100 / 12;
 
-    // Si rate es 0 (edge case), evitar división por cero
-    const monthly =
+    // Pago principal + interés (amortización clásica)
+    const principalInterest =
       monthlyRate === 0
         ? loan / months
         : (loan * monthlyRate * Math.pow(1 + monthlyRate, months)) /
           (Math.pow(1 + monthlyRate, months) - 1);
 
-    const totalPaid = monthly * months;
+    // Seguro estimado: 0.5% anual del precio / 12
+    const insurance = (price * 0.005) / 12;
+    // CRIM PR: ~0.2% anual del valor catastral (usamos precio como proxy)
+    const crim = (price * 0.002) / 12;
+
+    const monthlyTotal = principalInterest + insurance + crim;
+
+    const totalPaid = principalInterest * months;
     const totalInterest = totalPaid - loan;
 
     return {
       downAmount,
       loan,
-      monthly: Math.round(monthly),
+      principalInterest: Math.round(principalInterest),
+      insurance: Math.round(insurance),
+      crim: Math.round(crim),
+      monthlyTotal: Math.round(monthlyTotal),
       totalInterest: Math.round(totalInterest),
       totalPaid: Math.round(totalPaid + downAmount),
     };
@@ -60,14 +75,18 @@ export function MortgageCalculator() {
 
   const handleShare = () => {
     openWhatsApp([
-      "Hola Carlos, estuve usando la calculadora de hipoteca y quiero discutir estos números:",
+      "Hola, estuve usando la calculadora de hipoteca y quiero discutir estos números:",
       "",
       `• Precio de la propiedad: ${formatPrice(price)}`,
-      `• Down payment: ${downPct}% (${formatPrice(calc.downAmount)})`,
+      `• Pronto: ${downPct}% (${formatPrice(calc.downAmount)})`,
       `• Préstamo: ${formatPrice(calc.loan)}`,
       `• Tasa estimada: ${rate.toFixed(2)}%`,
       `• Plazo: ${termYears} años`,
-      `• Pago mensual estimado: ${formatPrice(calc.monthly)}`,
+      "",
+      `• Principal + Interés: ${formatPrice(calc.principalInterest)}`,
+      `• Seguro estimado: ${formatPrice(calc.insurance)}`,
+      `• CRIM estimado: ${formatPrice(calc.crim)}`,
+      `• Pago mensual total: ${formatPrice(calc.monthlyTotal)}`,
       "",
       "¿Podemos hablar?",
     ]);
@@ -87,32 +106,30 @@ export function MortgageCalculator() {
           eyebrow="Calculadora"
           title={
             <>
-              Tu pago mensual,
+              ¿Cuánto sería tu
               <br />
-              <span className="italic text-navy">antes de aplicar.</span>
+              <span className="italic text-navy">pago mensual?</span>
             </>
           }
-          subtitle="Mueve los sliders y calcula al instante el pago mensual de cualquier propiedad. Cuando estés listo, comparte el cálculo conmigo por WhatsApp."
+          subtitle="Mueve los sliders y calcula al instante. Incluye estimado de seguro y CRIM — los costos reales de tener propiedad en PR. Cuando estés listo, comparte el cálculo conmigo por WhatsApp."
         />
 
         <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
           {/* Inputs */}
           <div className="space-y-8 lg:col-span-7">
-            {/* Precio */}
             <SliderControl
               label="Precio de la propiedad"
               value={price}
               display={formatPrice(price)}
-              min={100000}
+              min={50000}
               max={1500000}
               step={5000}
               onChange={setPrice}
-              ticks={["$100K", "$750K", "$1.5M"]}
+              ticks={["$50K", "$750K", "$1.5M"]}
             />
 
-            {/* Down payment */}
             <SliderControl
-              label="Down payment"
+              label="Pronto (down payment)"
               value={downPct}
               display={`${downPct}% · ${formatPrice(calc.downAmount)}`}
               min={5}
@@ -122,7 +139,6 @@ export function MortgageCalculator() {
               ticks={["5%", "15%", "30%"]}
             />
 
-            {/* Interest rate */}
             <SliderControl
               label="Tasa de interés anual"
               value={rate}
@@ -135,7 +151,6 @@ export function MortgageCalculator() {
               footer="Tasa estimada — la real depende del banco y tu perfil crediticio."
             />
 
-            {/* Term */}
             <div>
               <label className="mb-3 flex items-baseline justify-between text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-mute">
                 <span>Plazo del préstamo</span>
@@ -143,17 +158,17 @@ export function MortgageCalculator() {
                   {termYears} años
                 </span>
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[15, 20, 30].map((y) => {
+              <div className="grid grid-cols-4 gap-2">
+                {([15, 20, 25, 30] as const).map((y) => {
                   const active = y === termYears;
                   return (
                     <button
                       key={y}
                       type="button"
-                      onClick={() => setTermYears(y as 15 | 20 | 30)}
-                      className={`rounded-xl border py-3 text-sm font-medium transition-all ${
+                      onClick={() => setTermYears(y)}
+                      className={`rounded-xl border py-3 text-sm font-semibold transition-all ${
                         active
-                          ? "border-navy bg-navy text-paper"
+                          ? "border-navy bg-navy text-white"
                           : "border-paper-line bg-white text-ink hover:border-navy/40"
                       }`}
                     >
@@ -167,7 +182,7 @@ export function MortgageCalculator() {
 
           {/* Result panel */}
           <div className="lg:col-span-5">
-            <div className="sticky top-28 rounded-3xl border border-paper-line bg-navy p-7 text-paper shadow-xl md:p-9">
+            <div className="sticky top-28 rounded-3xl border border-paper-line bg-navy p-7 text-white shadow-xl md:p-9">
               <div className="mb-6 flex items-center gap-3">
                 <Calculator className="h-5 w-5 text-gold" strokeWidth={1.8} />
                 <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-gold">
@@ -176,30 +191,35 @@ export function MortgageCalculator() {
               </div>
 
               <div className="mb-1 flex items-baseline gap-2">
-                <span className="text-2xl text-paper/60">$</span>
+                <span className="text-2xl text-white/60">$</span>
                 <AnimatePresence mode="wait">
                   <motion.span
-                    key={calc.monthly}
+                    key={calc.monthlyTotal}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.25 }}
                     className="font-display text-6xl font-medium tracking-tight md:text-7xl"
                   >
-                    {calc.monthly.toLocaleString()}
+                    {calc.monthlyTotal.toLocaleString()}
                   </motion.span>
                 </AnimatePresence>
-                <span className="text-base text-paper/60">/mes</span>
+                <span className="text-base text-white/60">/mes</span>
               </div>
-              <p className="mb-7 text-xs text-paper/55">
-                Solo principal + interés. No incluye seguros, CRIM ni HOA.
+              <p className="mb-7 text-xs text-white/55">
+                Estimado total. Tasas y condiciones reales varían.
               </p>
 
-              <div className="space-y-3 border-y border-paper/15 py-5 text-sm">
-                <Row label="Down payment" value={formatPrice(calc.downAmount)} />
-                <Row label="Préstamo" value={formatPrice(calc.loan)} />
+              <div className="space-y-3 border-y border-white/15 py-5 text-sm">
+                <Row label="Principal + Interés" value={formatPrice(calc.principalInterest)} />
+                <Row label="Seguro estimado" value={formatPrice(calc.insurance)} />
+                <Row label="CRIM estimado" value={formatPrice(calc.crim)} />
+              </div>
+
+              <div className="mt-5 space-y-3 text-sm">
+                <Row label="Pronto" value={formatPrice(calc.downAmount)} muted />
+                <Row label="Préstamo total" value={formatPrice(calc.loan)} muted />
                 <Row label="Intereses totales" value={formatPrice(calc.totalInterest)} accent />
-                <Row label="Total a pagar" value={formatPrice(calc.totalPaid)} bold />
               </div>
 
               <button
@@ -208,7 +228,7 @@ export function MortgageCalculator() {
                 className="group mt-6 inline-flex w-full min-h-[54px] items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.22em] text-ink transition-all hover:bg-gold-soft"
               >
                 <MessageCircle className="h-4 w-4" />
-                Compartir cálculo por WhatsApp
+                Habla con un experto
                 <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </button>
             </div>
@@ -219,10 +239,6 @@ export function MortgageCalculator() {
   );
 }
 
-/**
- * Control de slider individual con label y display del valor.
- * Aislado como sub-componente porque se reusa 3 veces dentro de esta sección.
- */
 function SliderControl({
   label,
   value,
@@ -274,19 +290,19 @@ function Row({
   label,
   value,
   accent,
-  bold,
+  muted,
 }: {
   label: string;
   value: string;
   accent?: boolean;
-  bold?: boolean;
+  muted?: boolean;
 }) {
   return (
     <div className="flex justify-between">
-      <span className="text-paper/60">{label}</span>
+      <span className={muted ? "text-white/40" : "text-white/65"}>{label}</span>
       <span
-        className={`${accent ? "text-gold" : "text-paper"} ${
-          bold ? "font-semibold" : "font-medium"
+        className={`font-medium ${
+          accent ? "text-gold" : muted ? "text-white/65" : "text-white"
         }`}
       >
         {value}

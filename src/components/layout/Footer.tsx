@@ -31,7 +31,7 @@ export function Footer() {
             <div className="font-display text-2xl tracking-tight text-ink md:text-3xl">
               <span className="text-navy">{SITE_CONFIG.brandName}</span>
               <span className="ml-2 text-xs uppercase tracking-[0.18em] text-gold">
-                {SITE_CONFIG.brandSuffix}
+                {SITE_CONFIG.brandTagline}
               </span>
             </div>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-ink-mute">
@@ -157,7 +157,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-paper-line pt-8 text-xs text-ink-mute sm:flex-row sm:items-center">
           <span>
-            © {year} {SITE_CONFIG.brandName} {SITE_CONFIG.brandSuffix}. Todos
+            © {year} {SITE_CONFIG.brandName} {SITE_CONFIG.brandTagline}. Todos
             los derechos reservados.
           </span>
           <a

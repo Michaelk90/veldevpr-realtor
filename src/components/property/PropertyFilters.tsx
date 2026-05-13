@@ -8,6 +8,14 @@ export type FilterState = {
   maxPrice: number;
 };
 
+/** Estado inicial canónico — exportado para que padres lo usen como default. */
+export const DEFAULT_FILTERS: FilterState = {
+  query: "",
+  type: "all",
+  minBedrooms: 0,
+  maxPrice: 1500000,
+};
+
 type PropertyFiltersProps = {
   value: FilterState;
   onChange: (next: FilterState) => void;
@@ -15,7 +23,6 @@ type PropertyFiltersProps = {
   resultCount: number;
 };
 
-/** Opciones del filtro de tipo. */
 const TYPE_OPTIONS: Array<{ value: PropertyType | "all"; label: string }> = [
   { value: "all", label: "Todos" },
   { value: "house", label: "Casa" },
@@ -28,8 +35,9 @@ const TYPE_OPTIONS: Array<{ value: PropertyType | "all"; label: string }> = [
 /**
  * Barra de filtros para el grid de propiedades.
  *
- * Controlado por el padre (stateless). Cuando el usuario interactúa,
- * dispara `onChange` con el nuevo estado completo.
+ * Componente CONTROLADO — el padre (HomePage) mantiene el estado.
+ * Sincroniza con HeroSearchBar: cuando el usuario busca en el hero,
+ * HomePage llama `setFilters()` y este componente refleja el cambio.
  *
  * Why controlado: la página de listings necesita el estado para filtrar
  *      el array y mostrar `resultCount`. Patrón estándar de React.
@@ -38,7 +46,7 @@ const TYPE_OPTIONS: Array<{ value: PropertyType | "all"; label: string }> = [
  * - query: search por título, ciudad, neighborhood, features
  * - type: pill buttons (casa / apto / etc)
  * - minBedrooms: 0+, 1+, 2+, 3+, 4+
- * - maxPrice: slider 100K - 1.5M
+ * - maxPrice: slider 50K - 1.5M
  */
 export function PropertyFilters({
   value,
@@ -72,9 +80,9 @@ export function PropertyFilters({
               key={opt.value}
               type="button"
               onClick={() => onChange({ ...value, type: opt.value })}
-              className={`rounded-full border px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] transition-all ${
+              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all ${
                 active
-                  ? "border-navy bg-navy text-paper"
+                  ? "border-navy bg-navy text-white"
                   : "border-paper-line bg-paper-soft text-ink hover:border-navy/40"
               }`}
             >
@@ -103,7 +111,7 @@ export function PropertyFilters({
                   onClick={() => onChange({ ...value, minBedrooms: n })}
                   className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all ${
                     active
-                      ? "border-navy bg-navy text-paper"
+                      ? "border-navy bg-navy text-white"
                       : "border-paper-line bg-white text-ink hover:border-navy/40"
                   }`}
                 >
@@ -123,7 +131,7 @@ export function PropertyFilters({
           </label>
           <input
             type="range"
-            min={100000}
+            min={50000}
             max={1500000}
             step={25000}
             value={value.maxPrice}
@@ -134,7 +142,7 @@ export function PropertyFilters({
             aria-label="Precio máximo"
           />
           <div className="mt-2 flex justify-between text-[10px] text-ink-mute">
-            <span>$100K</span>
+            <span>$50K</span>
             <span>$750K</span>
             <span>$1.5M</span>
           </div>

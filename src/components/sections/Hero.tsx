@@ -1,190 +1,143 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight, Award, MapPin, Shield } from "lucide-react";
-import { AGENT } from "../../data/agent";
-import { getFeaturedProperties } from "../../data/properties";
-import { formatPriceCompact } from "../../lib/format";
+import { Star, Users, Home } from "lucide-react";
 import { fadeUp, stagger } from "../../lib/animations";
-import { Link } from "react-router-dom";
+import { HeroSearchBar, type QuickSearchValue } from "./HeroSearchBar";
+
+type HeroProps = {
+  /** Callback al submit del search bar — el padre maneja scroll + filter sync. */
+  onQuickSearch: (value: QuickSearchValue) => void;
+};
 
 /**
  * Hero principal del home.
  *
- * Decisión: "Listings primero" (vs Persona del agente primero / Lifestyle).
- * Render: headline editorial izquierda + grid de 3 propiedades destacadas
- *         a la derecha, en formato compacto.
+ * Decisión: full-viewport con foto de fondo (casa de lujo PR) +
+ *           search bar prominente sobre la foto.
  *
- * Why: el visitante típico de un sitio de realtor en PR está BUSCANDO
- *      propiedades. Mostrarlas en hero = lo lleva inmediatamente a su intención.
- *      El agente persona vive en /sobre — no necesita el primer fold.
+ * Why: el visitante típico de un sitio de realtor está BUSCANDO
+ *      propiedades. Hero con search bar = captura intent inmediato.
  *
- * Performance: las imágenes de propiedades destacadas se cargan eager (sin lazy)
- *      porque están above-the-fold.
+ * Layout:
+ * - Imagen full-bleed con gradient overlay (oscuro izq, transparente der)
+ * - Tag pequeño + headline display + subtítulo
+ * - Search bar con 3 filtros + botón verde
+ * - 3 stats cards debajo
+ *
+ * Performance: imagen del hero es la única que se carga eager
+ *      (el resto lazy). Es above-the-fold.
+ *
+ * Lección aplicada: el overlay `absolute inset-0` tiene `pointer-events-none`
+ *      para no bloquear clicks en el search bar.
  */
-export function Hero() {
-  const featured = getFeaturedProperties();
-
+export function Hero({ onQuickSearch }: HeroProps) {
   return (
     <section
       id="inicio"
-      className="relative overflow-hidden pt-32 pb-20 md:pt-44 md:pb-28"
+      className="relative min-h-[95vh] overflow-hidden pt-24 md:min-h-screen md:pt-28"
     >
-      {/* Decoración del fondo — pointer-events-none por la lección de salon */}
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-60">
-        <div className="absolute -right-32 top-1/4 h-[500px] w-[500px] animate-drift rounded-full bg-navy/8 blur-3xl" />
-        <div className="absolute -left-32 bottom-0 h-[400px] w-[400px] animate-drift rounded-full bg-gold/10 blur-3xl" />
+      {/* Imagen de fondo full-bleed */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <img
+          src="https://images.unsplash.com/photo-1613977257363-707ba9348227?w=2400&q=90&auto=format&fit=crop"
+          alt=""
+          className="h-full w-full object-cover"
+        />
+        {/* Gradient overlay oscuro a la izquierda, transparente a la derecha */}
+        <div className="absolute inset-0 bg-gradient-to-r from-navy-deep/85 via-navy/55 to-navy/25" />
+        {/* Gradient bottom para que el search bar destaque */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-navy-deep/60 to-transparent" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-5 md:px-10">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
-          {/* Headline izquierda */}
+      <div className="relative mx-auto flex min-h-[80vh] max-w-7xl flex-col justify-center px-5 py-16 md:min-h-[88vh] md:px-10 md:py-24">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="max-w-3xl"
+        >
           <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="lg:col-span-7"
+            variants={fadeUp}
+            transition={{ duration: 0.6 }}
+            className="mb-7 inline-flex items-center gap-3 rounded-full border border-gold/50 bg-gold/15 px-4 py-1.5 backdrop-blur"
           >
-            <motion.div
-              variants={fadeUp}
-              transition={{ duration: 0.6 }}
-              className="mb-7 inline-flex items-center gap-3 rounded-full border border-gold/40 bg-gold/8 px-4 py-1.5"
-            >
-              <Shield className="h-3.5 w-3.5 text-gold-deep" strokeWidth={2.2} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold-deep">
-                Realtor licenciado · {AGENT.yearsExperience}+ años en PR
-              </span>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeUp}
-              transition={{ duration: 0.8 }}
-              className="font-display text-[56px] font-medium leading-[1.0] tracking-tight text-ink sm:text-[68px] md:text-[88px] lg:text-[108px]"
-            >
-              Tu próxima
-              <br />
-              <span className="italic text-navy">propiedad</span>
-              <br />
-              <span className="text-gold-deep">en PR.</span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              transition={{ duration: 0.7 }}
-              className="mt-9 max-w-md text-lg leading-relaxed text-ink-mute md:text-xl"
-            >
-              Más de una década ayudando a familias e inversionistas a comprar,
-              vender y rentar en Puerto Rico. Atención uno-a-uno, sin
-              intermediarios.
-            </motion.p>
-
-            <motion.div
-              variants={fadeUp}
-              transition={{ duration: 0.7 }}
-              className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
-            >
-              <a
-                href="#propiedades"
-                className="group inline-flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-navy px-8 py-4 text-xs font-semibold uppercase tracking-[0.22em] text-paper transition-all hover:bg-navy-deep"
-              >
-                Ver propiedades
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </a>
-              <a
-                href="#valoracion"
-                className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-full border border-ink/20 bg-white px-8 py-4 text-xs font-semibold uppercase tracking-[0.22em] text-ink transition-all hover:border-navy hover:text-navy"
-              >
-                Avalúo gratis
-              </a>
-            </motion.div>
-
-            <motion.div
-              variants={fadeUp}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="mt-14 flex flex-wrap items-center gap-x-10 gap-y-4 border-t border-paper-line pt-7"
-            >
-              {[
-                { value: `${AGENT.yearsExperience}+`, label: "Años en PR" },
-                { value: "150+", label: "Cierres" },
-                { value: "$48M", label: "Volumen 2025" },
-                { value: "ES/EN", label: "Bilingüe" },
-              ].map((stat) => (
-                <div key={stat.label} className="flex items-baseline gap-3">
-                  <div className="font-display text-3xl font-medium text-navy md:text-4xl">
-                    {stat.value}
-                  </div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-ink-mute">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
+            <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-gold-soft">
+              Tu agente de confianza en Puerto Rico
+            </span>
           </motion.div>
 
-          {/* Featured properties grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="lg:col-span-5"
+          <motion.h1
+            variants={fadeUp}
+            transition={{ duration: 0.8 }}
+            className="font-display text-[44px] font-medium leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[88px]"
           >
-            <div className="mb-5 flex items-baseline justify-between">
-              <h2 className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold-deep">
-                Propiedades destacadas
-              </h2>
-              <a
-                href="#propiedades"
-                className="text-xs text-ink-mute transition-colors hover:text-navy"
-              >
-                Ver todas →
-              </a>
-            </div>
+            Encuentra tu hogar
+            <br />
+            <span className="italic text-gold-soft">perfecto</span>
+            <span className="text-white"> en Puerto Rico</span>
+          </motion.h1>
 
-            <div className="space-y-4">
-              {featured.slice(0, 3).map((prop) => (
-                <Link
-                  key={prop.id}
-                  to={`/propiedades/${prop.slug}`}
-                  className="group flex gap-4 rounded-2xl border border-paper-line bg-white p-3 shadow-sm transition-all hover:border-navy/30 hover:shadow-lg"
-                >
-                  <div className="h-24 w-32 shrink-0 overflow-hidden rounded-xl bg-paper-soft">
-                    <img
-                      src={prop.gallery[0]}
-                      alt={prop.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  </div>
-                  <div className="flex flex-1 flex-col justify-between py-1">
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-ink-mute">
-                        <MapPin className="h-3 w-3 text-gold-deep" strokeWidth={2} />
-                        {prop.city}
-                      </div>
-                      <h3 className="mt-1 line-clamp-1 font-display text-base font-medium text-ink md:text-lg">
-                        {prop.title}
-                      </h3>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-display text-xl font-medium text-navy md:text-2xl">
-                        {formatPriceCompact(prop.price)}
-                      </span>
-                      <span className="text-[10px] text-ink-mute">
-                        {prop.bedrooms} hab · {prop.bathrooms} ba
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+          <motion.p
+            variants={fadeUp}
+            transition={{ duration: 0.7 }}
+            className="mt-7 max-w-xl text-base leading-relaxed text-white/80 md:text-lg"
+          >
+            Te guío en cada paso del camino — desde la primera visita hasta las
+            llaves en tu mano. Más de 12 años conectando familias con su próximo
+            hogar.
+          </motion.p>
 
-            <div className="mt-5 flex items-center gap-3 rounded-2xl border border-gold/20 bg-gold/5 p-4">
-              <Award className="h-5 w-5 shrink-0 text-gold-deep" strokeWidth={1.8} />
-              <p className="text-xs leading-relaxed text-ink-soft">
-                Verificación de financiamiento gratis en menos de 24 horas con
-                bancos asociados.
-              </p>
-            </div>
+          {/* Search bar */}
+          <motion.div
+            variants={fadeUp}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="mt-10"
+          >
+            <HeroSearchBar onSubmit={onQuickSearch} />
           </motion.div>
-        </div>
+
+          {/* Stats row */}
+          <motion.div
+            variants={fadeUp}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="mt-8 grid grid-cols-3 gap-3 md:mt-10 md:gap-4"
+          >
+            <StatCard icon={Home} value="150+" label="Propiedades" />
+            <StatCard icon={Star} value="4.9" label="Rating" />
+            <StatCard icon={Users} value="200+" label="Familias felices" />
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Scroll cue */}
+      <div className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-white/60 md:flex">
+        <span className="text-[10px] uppercase tracking-[0.3em]">Desliza</span>
+        <span className="h-10 w-px animate-pulse bg-white/40" />
       </div>
     </section>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: typeof Home;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-center backdrop-blur md:px-5 md:py-4 md:text-left">
+      <div className="hidden md:block">
+        <Icon className="mb-2 h-5 w-5 text-gold-soft" strokeWidth={1.8} />
+      </div>
+      <div className="font-display text-2xl font-medium text-white md:text-3xl">
+        {value}
+      </div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-white/70 md:text-xs">
+        {label}
+      </div>
+    </div>
   );
 }
