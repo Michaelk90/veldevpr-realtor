@@ -33,19 +33,25 @@ export function Hero({ onQuickSearch }: HeroProps) {
   return (
     <section
       id="inicio"
-      className="relative min-h-[95vh] overflow-hidden pt-24 md:min-h-screen md:pt-28"
+      className="relative min-h-[95vh] overflow-hidden bg-navy-deep pt-24 md:min-h-screen md:pt-28"
     >
-      {/* Imagen de fondo full-bleed */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
+      {/* Imagen de fondo full-bleed. El bg-navy-deep del section es el fallback
+          si la imagen falla en cargar. */}
+      <div className="pointer-events-none absolute inset-0">
         <img
-          src="https://images.unsplash.com/photo-1613977257363-707ba9348227?w=2400&q=90&auto=format&fit=crop"
+          src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=2400&q=90&auto=format&fit=crop"
           alt=""
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover opacity-60"
+          loading="eager"
+          onError={(e) => {
+            // Si la imagen falla, ocultamos el <img> y queda el bg-navy-deep
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
         />
-        {/* Gradient overlay oscuro a la izquierda, transparente a la derecha */}
-        <div className="absolute inset-0 bg-gradient-to-r from-navy-deep/85 via-navy/55 to-navy/25" />
-        {/* Gradient bottom para que el search bar destaque */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-navy-deep/60 to-transparent" />
+        {/* Gradient overlay oscuro: garantiza contraste sobre cualquier imagen */}
+        <div className="absolute inset-0 bg-gradient-to-br from-navy-deep/95 via-navy/80 to-navy/60" />
+        {/* Gradient bottom — refuerza el contraste donde aparece el search bar */}
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-navy-deep/85 to-transparent" />
       </div>
 
       <div className="relative mx-auto flex min-h-[80vh] max-w-7xl flex-col justify-center px-5 py-16 md:min-h-[88vh] md:px-10 md:py-24">
